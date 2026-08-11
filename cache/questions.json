@@ -1,0 +1,51 @@
+{
+    "1374151327294292129": {
+        "nota_minima": 4,
+        "questoes": [
+            {
+                "enunciado": "Sobre a utilização de skins que alteram características naturais dos animais (como leucismo, eritrismo, melanismo, entre outras), qual é a conduta correta dentro do servidor?",
+                "alternativas": {
+                    "a": "Utilizar skins, pois não há regras contra.",
+                    "b": "Não utilizar, pois há regras contra o uso."
+                },
+                "resposta": "b"
+            },
+            {
+                "enunciado": " Em relação ao balanceamento, quais tiers de animais podem ser utilizados em uma sessão com 10 jogadores?",
+                "alternativas": {
+                    "a": "Tier 1 - 3",
+                    "b": "Tier 1 - 6",
+                    "c": "Tier 1 - 4"
+                },
+                "resposta": "a"
+            },
+            {
+                "enunciado": "Em uma situação de disputa territorial, caso você fique com a vida em estado crítico (vida vermelha), qual deve ser sua atitude dentro das regras de realismo e sobrevivência? ",
+                "alternativas": {
+                    "a": "Fugiria",
+                    "b": "Lutaria até a morte",
+                    "c": "Chamaria outros animais"
+                },
+                "resposta": "a"
+            },
+            {
+                "enunciado": "Ao estar em posse de uma carcaça, qual é a conduta correta que deve ser seguida em relação a outros jogadores e ao ambiente ao seu redor?",
+                "alternativas": {
+                    "a": "Abandonar após saciar a fome",
+                    "b": "Proteger até que ela suma",
+                    "c": "Dar para outro animal carnívoro"
+                },
+                "resposta": "b"
+            },
+            {
+                "enunciado": "Em um cenário onde um jogador, durante uma call externa ao jogo, solicita a localização de outro animal/personagem, qual deve ser a sua conduta correta?",
+                "alternativas": {
+                    "a": "Passar a localização",
+                    "b": "Não passar a localização",
+                    "c": "Xingar o membro"
+                },
+                "resposta": "b"
+            }
+        ]
+    }
+}
