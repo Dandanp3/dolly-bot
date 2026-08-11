@@ -31,13 +31,13 @@ class CoinsCog(commands.Cog):
         embed.set_author(name=target.display_name, icon_url=target.display_avatar.url)
         
         # Colunas com os dados de carteira e banco
-        embed.add_field(name="🎒 Na Pata", value=f"**{wallet}** moedas", inline=True)
+        embed.add_field(name="🐾 Na Pata", value=f"**{wallet}** moedas", inline=True)
         embed.add_field(name="⛰️ Na Caverna", value=f"**{bank}** moedas", inline=True)
         
         # Separador visual
         embed.add_field(name="", value="", inline=False)
         
-        embed.add_field(name="📊 Patrimônio Total", value=f"**{total}** moedas", inline=True)
+        embed.add_field(name="🦴 Patrimônio Total", value=f"**{total}** moedas", inline=True)
 
         # Footer adaptativo
         if is_self and wallet > 0:
