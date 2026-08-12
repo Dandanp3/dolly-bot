@@ -44,6 +44,8 @@ class ServerController:
         server_data = await self.get_or_create_server(server_id)
         decimals = server_data.get("decimal_places", 0)
 
-        formatted = f"{amount:.{decimals}f}"
+        formatted = f"{amount:,.{decimals}f}"
+        
+        formatted = formatted.replace(',', 'X').replace('.', ',').replace('X', '.')
         
         return formatted
