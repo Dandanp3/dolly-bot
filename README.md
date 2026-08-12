@@ -1,6 +1,4 @@
-# 🐾 Dolly
-
-Bem-vindo ao guia oficial de comandos! A economia do nosso bot é dividida entre ações imersivas, gerenciamento de recursos na sua caverna (banco) e vantagens exclusivas de cargos.
+# 🐾 Dolly | Bot
 
 > **Prefixo do Bot:** `d!`
 > Todos os comandos abaixo devem ser iniciados com este prefixo.
