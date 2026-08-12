@@ -23,7 +23,7 @@ class LeaderboardView(discord.ui.View):
         page_data = self.data[start:end]
 
         if not page_data:
-            embed.description = "Nenhum registro de moedas encontrado neste servidor."
+            embed.description = "Nenhum registro de coins encontrado neste servidor."
             return embed
 
         description = []
@@ -43,7 +43,7 @@ class LeaderboardView(discord.ui.View):
             # Aqui pegamos o valor já formatado que foi preparado no comando principal
             total_formatado = user["total_formatado"] 
 
-            description.append(f"{medal} **{name}** — <:bone:1386546091306254386> **{total_formatado}** moedas")
+            description.append(f"{medal} **{name}** — <:bone:1386546091306254386> **{total_formatado}** coins")
 
         embed.description = "\n".join(description)
         embed.set_footer(
