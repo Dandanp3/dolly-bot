@@ -83,7 +83,7 @@ class EconomyCog(commands.Cog):
         base_reward = random.randint(min_coins, max_coins)
         reward = int(base_reward * total_multiplier)
 
-        # Atualizar os dados do usuário com a nova quantia
+        # Atualizar os dados do usuário com a nova quantia (usando o valor numérico não formatado)
         update_query = {
             "$inc": {f"servers.{server_id_str}.wallet": reward},
             "$set": {
@@ -102,22 +102,24 @@ class EconomyCog(commands.Cog):
             upsert=True
         )
 
+        formatted_reward = await self.bot.server_controller.format_money(ctx.guild.id, reward)
+
         # 🚀 Criar o textinho extra apenas se o multiplicador for maior que o normal (1.0)
         boost_text = f"\n🚀 *(Boost aplicado: **{total_multiplier}x**)*" if total_multiplier > 1.0 else ""
 
         # Pegar os dados visuais específicos da ação escolhida
         visuals = EMBED_VISUALS[action_name]
         
-        # Criar o Embed de Sucesso
+        # Criar o Embed de Sucesso (injetando o valor já formatado)
         embed_success = discord.Embed(
             title=visuals["title"],
-            description=visuals["desc"].format(reward=reward, boost_text=boost_text),
+            description=visuals["desc"].format(reward=formatted_reward, boost_text=boost_text),
             color=visuals["color"]
         )
         
         # Adicionar o avatar do usuário e um rodapé temático
         embed_success.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar.url)
-        embed_success.set_footer(text="🐾 Mundo Animal • Economia")
+        embed_success.set_footer(text="🐾 • Economia")
 
         await ctx.send(embed=embed_success)
 

@@ -88,12 +88,14 @@ class CacarCog(commands.Cog):
             upsert=True
         )
 
+        formatted_reward = await self.bot.server_controller.format_money(ctx.guild.id, reward)
+
         # Mensagem final
         embed = discord.Embed(
             title="🩸 Caçada Concluída!",
             description=(
-                f"Você achou um animal indefeso e o finalizou, conseguindo achar **{reward} moedas** dentro de seu corpo.\n\n"
-                f"{member.mention} perdeu **{reward} moedas** passivamente."
+                f"Você achou um animal indefeso e o finalizou, conseguindo achar **{formatted_reward} moedas** dentro de seu corpo.\n\n"
+                f"{member.mention} perdeu **{formatted_reward} moedas** passivamente."
             ),
             color=0x8b0000 # Vermelho 
         )

@@ -33,7 +33,7 @@ class StoreActionsCog(commands.Cog):
             color=0x9b59b6
         )
         embed.add_field(name="Tipo", value=item_type_str, inline=True)
-        embed.add_field(name="Preço", value=f"💰 {price} moedas", inline=True)
+        embed.add_field(name="Preço", value=f"<:bone:1386546091306254386> {price} moedas", inline=True)
         embed.add_field(name="Estoque", value=stock_str, inline=True)
         
         if matched_item.get("type") == "cargo" and matched_item.get("role_id"):

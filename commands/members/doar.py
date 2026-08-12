@@ -54,7 +54,7 @@ class TransferCog(commands.Cog):
             title="🎁 Doação Realizada!",
             description=(
                 f"Você transferiu **{amount} moedas** para {member.mention}!\n\n"
-                f"💰 **Saldo restante na sua carteira:** {author_wallet - amount} moedas"
+                f"<:bone:1386546091306254386> **Saldo restante na sua carteira:** {author_wallet - amount} moedas"
             ),
             color=0x2ecc71
         )

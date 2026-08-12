@@ -39,9 +39,11 @@ class LeaderboardView(discord.ui.View):
 
             member = self.ctx.guild.get_member(user["discord_id"])
             name = member.display_name if member else f"Usuário ({user['discord_id']})"
-            total = user["total"]
+            
+            # Aqui pegamos o valor já formatado que foi preparado no comando principal
+            total_formatado = user["total_formatado"] 
 
-            description.append(f"{medal} **{name}** — 💰 **{total}** moedas")
+            description.append(f"{medal} **{name}** — <:bone:1386546091306254386> **{total_formatado}** moedas")
 
         embed.description = "\n".join(description)
         embed.set_footer(
@@ -115,6 +117,13 @@ class TopCog(commands.Cog):
 
         if not results:
             return await ctx.send("🏝️ Nenhum animal acumulou riquezas neste servidor ainda!")
+
+        for user in results:
+            # Chama a função centralizada do seu controller e salva em uma nova chave
+            user["total_formatado"] = await self.bot.server_controller.format_money(
+                ctx.guild.id, 
+                user["total"]
+            )
 
         view = LeaderboardView(ctx, results, per_page=10)
         view.update_buttons()

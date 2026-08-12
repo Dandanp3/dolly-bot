@@ -20,6 +20,12 @@ class CoinsCog(commands.Cog):
         bank = server_profile.get("bank", 0)
         total = wallet + bank
 
+
+        formatted_wallet = await self.bot.server_controller.format_money(ctx.guild.id, wallet)
+        formatted_bank = await self.bot.server_controller.format_money(ctx.guild.id, bank)
+        formatted_total = await self.bot.server_controller.format_money(ctx.guild.id, total)
+
+
         is_self = target == ctx.author
         title_text = "🌿 Seus Suprimentos Acumulados" if is_self else f"🌿 Suprimentos de {target.display_name}"
 
@@ -30,20 +36,20 @@ class CoinsCog(commands.Cog):
         )
         embed.set_author(name=target.display_name, icon_url=target.display_avatar.url)
         
-        # Colunas com os dados de carteira e banco
-        embed.add_field(name="🐾 Na Pata", value=f"**{wallet}** moedas", inline=True)
-        embed.add_field(name="⛰️ Na Caverna", value=f"**{bank}** moedas", inline=True)
+        # Colunas com os dados de carteira e banco (usando as variáveis formatadas)
+        embed.add_field(name="🐾 Na Pata", value=f"**{formatted_wallet}** moedas", inline=True)
+        embed.add_field(name="<:cave:1386546110092279818> Na Caverna", value=f"**{formatted_bank}** moedas", inline=True)
         
         # Separador visual
         embed.add_field(name="", value="", inline=False)
         
-        embed.add_field(name="🦴 Patrimônio Total", value=f"**{total}** moedas", inline=True)
+        embed.add_field(name="<:bone:1386546091306254386> Patrimônio Total", value=f"**{formatted_total}** moedas", inline=True)
 
-        # Footer adaptativo
+        # Footer adaptativo (continua usando a variável int 'wallet' para a matemática)
         if is_self and wallet > 0:
             embed.set_footer(text="Dica: Guarde suas moedas na caverna (banco) para não ser caçado!")
         else:
-            embed.set_footer(text="🐾 Mundo Animal • Economia")
+            embed.set_footer(text="🐾 • Economia")
 
         await ctx.send(embed=embed)
 

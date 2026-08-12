@@ -38,3 +38,12 @@ class ServerController:
                 return item
                 
         return None
+    
+
+    async def format_money(self, server_id: int, amount: float) -> str:
+        server_data = await self.get_or_create_server(server_id)
+        decimals = server_data.get("decimal_places", 0)
+
+        formatted = f"{amount:.{decimals}f}"
+        
+        return formatted

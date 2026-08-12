@@ -42,11 +42,13 @@ class BankCog(commands.Cog):
             return await ctx.send("❌ Valor inválido! Use um número, `all` ou `tudo`.")
         
         if amount > wallet:
-            return await ctx.send(f"❌ Você não tem moedas suficientes! Sua carteira atual: **{wallet} moedas**.")
+            # Formatamos o valor da carteira apenas para exibir o erro bonitinho
+            formatted_wallet = await self.bot.server_controller.format_money(ctx.guild.id, wallet)
+            return await ctx.send(f"❌ Você não tem moedas suficientes! Sua carteira atual: **{formatted_wallet} moedas**.")
 
         now = datetime.now(timezone.utc)
         
-        # Atualiza banco (+amount) e carteira (-amount)
+        # Atualiza banco (+amount) e carteira (-amount) com os valores inteiros reais
         await self.db.users.update_one(
             {"discord_id": ctx.author.id},
             {
@@ -60,9 +62,15 @@ class BankCog(commands.Cog):
             upsert=True
         )
         
+        # ---------------------------------------------------------
+        # NOVIDADE AQUI: Formatamos o valor exato que foi depositado
+        # ---------------------------------------------------------
+        formatted_amount = await self.bot.server_controller.format_money(ctx.guild.id, amount)
+        # ---------------------------------------------------------
+
         embed = discord.Embed(
-            title="🏦 Depósito Realizado!",
-            description=f"Você guardou **{amount} moedas** com segurança na sua caverna (banco)!",
+            title="<:cave:1386546110092279818> Depósito Realizado!",
+            description=f"Você guardou **{formatted_amount} moedas** com segurança na sua caverna (banco)!",
             color=0x2ecc71
         )
         embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar.url)
@@ -84,11 +92,13 @@ class BankCog(commands.Cog):
             return await ctx.send("❌ Valor inválido! Use um número, `all` ou `tudo`.")
         
         if amount > bank:
-            return await ctx.send(f"❌ Você não tem tudo isso guardado! Seu saldo no banco é: **{bank} moedas**.")
+            # Formatamos o valor do banco apenas para exibir o erro bonitinho
+            formatted_bank = await self.bot.server_controller.format_money(ctx.guild.id, bank)
+            return await ctx.send(f"❌ Você não tem tudo isso guardado! Seu saldo no banco é: **{formatted_bank} moedas**.")
 
         now = datetime.now(timezone.utc)
         
-        # Atualiza banco (-amount) e carteira (+amount)
+        # Atualiza banco (-amount) e carteira (+amount) com os valores inteiros reais
         await self.db.users.update_one(
             {"discord_id": ctx.author.id},
             {
@@ -102,9 +112,15 @@ class BankCog(commands.Cog):
             upsert=True
         )
         
+        # ---------------------------------------------------------
+        # NOVIDADE AQUI: Formatamos o valor exato que foi sacado
+        # ---------------------------------------------------------
+        formatted_amount = await self.bot.server_controller.format_money(ctx.guild.id, amount)
+        # ---------------------------------------------------------
+
         embed = discord.Embed(
-            title="💰 Saque Realizado!",
-            description=f"Você retirou **{amount} moedas** do seu esconderijo e colocou na carteira.",
+            title="<:bone:1386546091306254386> Saque Realizado!",
+            description=f"Você retirou **{formatted_amount} moedas** do seu esconderijo e colocou na carteira.",
             color=0xf1c40f
         )
         embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar.url)

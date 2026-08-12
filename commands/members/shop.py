@@ -25,7 +25,10 @@ class ShopView(discord.ui.View):
 
         for item in page_items:
             emoji = "🎭" if item.get("type") == "cargo" else "📦"
-            price = item.get("price")
+            
+            # Puxamos o preço já formatado que criamos no comando principal
+            price = item.get("price_formatted") 
+            
             name = item.get("name")
             
             # Checar estoque se for limitado
@@ -37,7 +40,7 @@ class ShopView(discord.ui.View):
 
             embed.add_field(
                 name=f"{emoji} {name}",
-                value=f"💰 Preço: **{price}** moedas{stock_text}",
+                value=f"<:bone:1386546091306254386> Preço: **{price}** moedas{stock_text}",
                 inline=False
             )
 
@@ -78,6 +81,7 @@ class ShopView(discord.ui.View):
         except Exception:
             pass
 
+
 class ShopCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -90,6 +94,12 @@ class ShopCog(commands.Cog):
 
         if not items:
             return await ctx.send("🏜️ A loja deste servidor está vazia no momento!")
+
+        for item in items:
+            item["price_formatted"] = await self.bot.server_controller.format_money(
+                ctx.guild.id, 
+                item.get("price", 0)
+            )
 
         view = ShopView(ctx, items, per_page=5)
         view.update_buttons()
