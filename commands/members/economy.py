@@ -104,7 +104,6 @@ class EconomyCog(commands.Cog):
 
         formatted_reward = await self.bot.server_controller.format_money(ctx.guild.id, reward)
 
-        # 🚀 Criar o textinho extra apenas se o multiplicador for maior que o normal (1.0)
         boost_text = f"\n🚀 *(Boost aplicado: **{total_multiplier}x**)*" if total_multiplier > 1.0 else ""
 
         # Pegar os dados visuais específicos da ação escolhida
@@ -134,6 +133,47 @@ class EconomyCog(commands.Cog):
     @commands.command(name="uivar")
     async def uivar(self, ctx):
         await self._execute_action(ctx, "uivar")
+
+    # COMANDO DE CONFIGURAÇÃO 
+    @commands.command(name="seteconomia", aliases=["config_economia"])
+    @commands.has_permissions(administrator=True) # Somente administradores
+    async def seteconomia(self, ctx, acao: str, min_coins: int, max_coins: int, cooldown_segundos: int):
+        """
+        Altera os ganhos e o cooldown de uma ação da economia.
+        Uso: !seteconomia <brincar|dormir|uivar> <min> <max> <cooldown>
+        """
+        acao = acao.lower()
+        if acao not in ["brincar", "dormir", "uivar"]:
+            return await ctx.send("❌ Ação inválida! Escolha entre: `brincar`, `dormir` ou `uivar`.")
+
+        if min_coins < 0 or max_coins < min_coins or cooldown_segundos < 0:
+            return await ctx.send("❌ Valores inválidos! O mínimo não pode ser maior que o máximo e não podem ser negativos.")
+
+        server_id_str = str(ctx.guild.id)
+
+        # Atualiza os valores específicos da ação no banco de dados MongoDB
+        await self.db.servers.update_one(
+            {"server_id": ctx.guild.id},
+            {
+                "$set": {
+                    f"economy.{acao}.min_coins": min_coins,
+                    f"economy.{acao}.max_coins": max_coins,
+                    f"economy.{acao}.cooldown_seconds": cooldown_segundos
+                }
+            },
+            upsert=True
+        )
+
+        embed = discord.Embed(
+            title="⚙️ Economia Atualizada!",
+            description=f"As configurações para a ação **{acao}** foram alteradas com sucesso neste servidor.",
+            color=0x2ecc71
+        )
+        embed.add_field(name="Mínimo", value=f"{min_coins} moedas", inline=True)
+        embed.add_field(name="Máximo", value=f"{max_coins} moedas", inline=True)
+        embed.add_field(name="Tempo de Espera", value=f"{cooldown_segundos} segundos", inline=True)
+        
+        await ctx.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(EconomyCog(bot))
