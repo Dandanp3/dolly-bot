@@ -13,8 +13,13 @@ class ServerProfile(BaseModel):
     # Campos de Economia 
     wallet: int = Field(default=0, description="Saldo de moedas na carteira do usuário")
     bank: int = Field(default=0, description="Saldo de moedas no banco do usuário")
-    
-    # Campos de Strike
+
+    last_salaries: Dict[str, datetime] = Field(
+        default_factory=dict, 
+        description="Mapeia o ID do cargo (str) para a data/hora do último recebimento"
+    )
+
+    # Campos de Strike 
     has_strike: bool = Field(default=False, description="Indica se o usuário possui strike ativo")
     strike_count: int = Field(default=0, description="Quantidade total de strikes recebidos aqui")
     strike_expires_at: Optional[datetime] = Field(None, description="Data em que o strike atual deve ser removido")
