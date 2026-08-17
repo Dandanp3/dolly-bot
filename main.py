@@ -38,6 +38,7 @@ class Kalif(commands.Bot):
             "commands.admin.boosts",
             "commands.admin.salary",
             "commands.admin.addcoins",
+            "commands.admin.reset",
 
             # membros
             "help",
