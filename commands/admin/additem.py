@@ -12,7 +12,6 @@ def normalize_text(text: str) -> str:
     only_ascii = "".join([c for c in nfkd_form if not unicodedata.combining(c)])
     return only_ascii.lower().strip()
 
-# ---------------- VIEWS AUXILIARES ---------------- #
 class TypeChoiceView(discord.ui.View):
     def __init__(self, ctx):
         super().__init__(timeout=60)
@@ -66,7 +65,6 @@ class LimitChoiceView(discord.ui.View):
         await interaction.response.defer()
         self.stop()
 
-# ---------------- COMANDO PRINCIPAL ---------------- #
 class StoreAdminCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -275,6 +273,45 @@ class StoreAdminCog(commands.Cog):
         embed.set_footer(text="🐾 Mundo Animal • Administração da Loja")
 
         await ctx.send(embed=embed)
+
+    @commands.command(name="adddodo")
+    @commands.has_permissions(administrator=True)
+    async def adddodo(self, ctx, price: int):
+        """Adiciona um Dodô à venda na loja."""
+        if price <= 0:
+            return await ctx.send("❌ O preço do Dodô deve ser maior que zero!")
+
+        server_id_str = str(ctx.guild.id)
+        
+        # Cria a estrutura do item do tipo 'dodo'
+        dodo_item = {
+            "id": "item_dodo_oficial", 
+            "type": "dodo",
+            "name": "🦤 Dodô de Combate",
+            "price": price,
+            "description": "Compre este Dodô para participar das famosas Rinhas de Dodô! Se você perder uma luta, ele morre.",
+            "is_limited": False,
+            "stock": None
+        }
+
+        await self.db.servers.update_one(
+            {"server_id": ctx.guild.id},
+            {"$pull": {"store": {"type": "dodo"}}}
+        )
+
+        # Agora adicionamos ele no topo ($position: 0)
+        await self.db.servers.update_one(
+            {"server_id": ctx.guild.id},
+            {"$push": {
+                "store": {
+                    "$each": [dodo_item],
+                    "$position": 0
+                }
+            }},
+            upsert=True
+        )
+
+        await ctx.send(f"O **🦤 Dodô de Combate** foi adicionado à loja por `{price}` moedas!")
 
 async def setup(bot):
     await bot.add_cog(StoreAdminCog(bot))
