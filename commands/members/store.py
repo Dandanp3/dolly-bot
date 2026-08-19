@@ -62,14 +62,17 @@ class StoreActionsCog(commands.Cog):
         if not matched_item:
             return await ctx.send(f"❌ O item **'{item_name}'** não existe na loja do servidor.")
 
+        # Impedir que comprem o dodô por aqui agora que tem comando próprio
+        if matched_item.get("type") == "dodo":
+            return await ctx.send("❌ Para comprar um Dodô de Combate, utilize o comando exclusivo **`d!buydodo`**!")
+
         price = matched_item.get("price")
 
-        # 2. Buscar carteira do usuário no banco 
+        # Buscar carteira do usuário no banco 
         user_data = await self.db.users.find_one({"discord_id": ctx.author.id}) or {}
         server_profile = user_data.get("servers", {}).get(server_id_str, {})
         wallet = server_profile.get("wallet", 0)
 
-        # Checagem de saldo que vale tanto para dodo quanto para itens normais
         if wallet < price:
             return await ctx.send(
                 f"❌ Você não tem moedas suficientes na carteira!\n"
@@ -80,42 +83,6 @@ class StoreActionsCog(commands.Cog):
 
         now = datetime.now(timezone.utc)
 
-        if matched_item.get("type") == "dodo":
-            if server_profile.get("has_dodo", False):
-                return await ctx.send("❌ Você já tem um Dodô vivo! Não pode ter dois ao mesmo tempo.")
-
-            await ctx.send(f"Você está pagando `{price}` moedas por um Dodô. **Digite no chat como você quer chamar o seu Dodô** (tempo: 60s):")
-
-            def check(m):
-                return m.author == ctx.author and m.channel == ctx.channel
-
-            try:
-                msg = await self.bot.wait_for('message', check=check, timeout=60.0)
-                dodo_name = msg.content.strip()
-                
-                if len(dodo_name) > 30:
-                    dodo_name = dodo_name[:30]
-
-            except asyncio.TimeoutError:
-                return await ctx.send("⏳ Tempo esgotado! A compra do Dodô foi cancelada e seu dinheiro não foi descontado.")
-
-            # Desconta o dinheiro e salva o dodô
-            await self.db.users.update_one(
-                {"discord_id": ctx.author.id},
-                {
-                    "$inc": {f"servers.{server_id_str}.wallet": -price},
-                    "$set": {
-                        f"servers.{server_id_str}.has_dodo": True,
-                        f"servers.{server_id_str}.dodo_name": dodo_name,
-                        "updated_at": now
-                    }
-                }
-            )
-
-            # Para a execução do comando aqui, já que o dodô foi comprado com sucesso
-            return await ctx.send(f"🎉 Parabéns! Você acaba de adotar o **🦤 {dodo_name}**. Cuide bem dele e boa sorte nas rinhas!")
-        
-        
         # Verificar estoque se for limitado
         is_limited = matched_item.get("is_limited", False)
         current_stock = matched_item.get("stock", 0)
@@ -175,6 +142,70 @@ class StoreActionsCog(commands.Cog):
             embed.set_footer(text="⚠️ Este era o último item no estoque! Ele foi removido da loja.")
 
         await ctx.send(embed=embed)
+
+    @commands.command(name="buydodo", aliases=["comprardodo"])
+    async def buy_dodo(self, ctx):
+        """Compra um Dodô de Combate exclusivo usando o saldo da carteira."""
+        server_id_str = str(ctx.guild.id)
+        
+        # Puxar as configurações do servidor direto do banco para achar o preço do dodo
+        server_data = await self.db.servers.find_one({"server_id": ctx.guild.id}) or {}
+        store_items = server_data.get("store", [])
+        
+        dodo_item = next((item for item in store_items if item.get("type") == "dodo"), None)
+        
+        if not dodo_item:
+            return await ctx.send("❌ O **Dodô** não está à venda neste servidor no momento.\n*(Peça para um Administrador configurar o preço com `d!adddodo` primeiro!)*")
+            
+        price = dodo_item.get("price")
+        
+        # Checar a carteira e o perfil do usuário
+        user_data = await self.db.users.find_one({"discord_id": ctx.author.id}) or {}
+        server_profile = user_data.get("servers", {}).get(server_id_str, {})
+        wallet = server_profile.get("wallet", 0)
+        
+        if wallet < price:
+            return await ctx.send(
+                f"❌ Você não tem moedas suficientes na carteira!\n"
+                f"• Preço do Dodô: **{price}** moedas\n"
+                f"• Sua carteira atual: **{wallet}** moedas"
+            )
+            
+        # Garantir que ele já não tenha um Dodô vivo
+        if server_profile.get("has_dodo", False):
+            return await ctx.send("❌ Você já tem um Dodô vivo! Não pode ter dois ao mesmo tempo nas rinhas.")
+            
+        # Iniciar o processo de compra e perguntar o nome
+        await ctx.send(f"💸 O Dodô custa `{price}` moedas. **Digite no chat o nome que você quer dar ao seu Dodô** (tempo: 60s):")
+        
+        def check(m):
+            return m.author == ctx.author and m.channel == ctx.channel
+
+        try:
+            msg = await self.bot.wait_for('message', check=check, timeout=60.0)
+            dodo_name = msg.content.strip()
+            
+            if len(dodo_name) > 30:
+                dodo_name = dodo_name[:30]
+                
+        except asyncio.TimeoutError:
+            return await ctx.send("⏳ Tempo esgotado! Sua adoção foi cancelada e o dinheiro não foi descontado.")
+            
+        # Salvar no banco (descontar moedas e registrar o pet)
+        now = datetime.now(timezone.utc)
+        await self.db.users.update_one(
+            {"discord_id": ctx.author.id},
+            {
+                "$inc": {f"servers.{server_id_str}.wallet": -price},
+                "$set": {
+                    f"servers.{server_id_str}.has_dodo": True,
+                    f"servers.{server_id_str}.dodo_name": dodo_name,
+                    "updated_at": now
+                }
+            }
+        )
+        
+        await ctx.send(f"🎉 Parabéns! O dinheiro foi descontado e você acaba de adotar o **🦤 {dodo_name}**. Cuide bem dele e boa sorte nas rinhas!")
 
 
 async def setup(bot):
