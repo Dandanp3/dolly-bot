@@ -277,29 +277,28 @@ class StoreAdminCog(commands.Cog):
     @commands.command(name="adddodo")
     @commands.has_permissions(administrator=True)
     async def adddodo(self, ctx, price: int):
-        """Adiciona um Dodô à venda na loja."""
+        """Adiciona o Dodô à venda na loja."""
         if price <= 0:
             return await ctx.send("❌ O preço do Dodô deve ser maior que zero!")
 
-        server_id_str = str(ctx.guild.id)
-        
-        # Cria a estrutura do item do tipo 'dodo'
         dodo_item = {
-            "id": "item_dodo_oficial", 
+            "id": "dodo", 
             "type": "dodo",
             "name": "🦤 Dodô de Combate",
             "price": price,
-            "description": "Compre este Dodô para participar das famosas Rinhas de Dodô! Se você perder uma luta, ele morre.",
+            "description": "Compre este Dodô para participar das famosas Rinhas! Se você perder uma luta, ele morre.",
             "is_limited": False,
-            "stock": None
+            "stock": None,
+            "role_id": None # Preenchendo com None para bater certinho com seu modelo
         }
-
+        
+        # Removemos qualquer dodô antigo para não duplicar
         await self.db.servers.update_one(
             {"server_id": ctx.guild.id},
             {"$pull": {"store": {"type": "dodo"}}}
         )
 
-        # Agora adicionamos ele no topo ($position: 0)
+        # Adicionamos ele no topo da loja
         await self.db.servers.update_one(
             {"server_id": ctx.guild.id},
             {"$push": {
@@ -311,7 +310,7 @@ class StoreAdminCog(commands.Cog):
             upsert=True
         )
 
-        await ctx.send(f"O **🦤 Dodô de Combate** foi adicionado à loja por `{price}` moedas!")
+        await ctx.send(f"✅ O **🦤 Dodô de Combate** foi adicionado à loja por **{price}** moedas!\n*(Os jogadores já podem usar `d!buy dodo`)*")
 
 async def setup(bot):
     await bot.add_cog(StoreAdminCog(bot))
