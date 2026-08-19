@@ -51,7 +51,8 @@ class Kalif(commands.Bot):
             "commands.members.store",
             "commands.members.doar",
             "commands.members.boosts",
-            "commands.members.salary"
+            "commands.members.salary",
+            "commands.members.dodo_fight"
             ] 
         
         for ext in extensions:
