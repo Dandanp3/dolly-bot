@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from datetime import datetime, timezone
+import asyncio 
 
 class StoreActionsCog(commands.Cog):
     def __init__(self, bot):
@@ -16,7 +17,13 @@ class StoreActionsCog(commands.Cog):
             return await ctx.send(f"❌ Nenhum item com o nome ou ID **'{item_name}'** foi encontrado na loja.")
 
         # Montar embed com TODAS as informações
-        item_type_str = "🎭 Cargo" if matched_item.get("type") == "cargo" else "📦 Item Normal"
+        if matched_item.get("type") == "cargo":
+            item_type_str = "🎭 Cargo"
+        elif matched_item.get("type") == "dodo":
+            item_type_str = "🦤 Dodô de Combate"
+        else:
+            item_type_str = "📦 Item Normal"
+
         price = matched_item.get("price")
         desc = matched_item.get("description", "Sem descrição informada.")
         is_limited = matched_item.get("is_limited", False)
@@ -49,30 +56,20 @@ class StoreActionsCog(commands.Cog):
         """Compra um item da loja usando exclusivamente o saldo da carteira."""
         server_id_str = str(ctx.guild.id)
         
-        # 1. Buscar o item usando o método inteligente do controller (ignora maiúsculas e acentos)
+        # 1. Buscar o item
         matched_item = await self.bot.server_controller.find_store_item(ctx.guild.id, item_name)
 
         if not matched_item:
             return await ctx.send(f"❌ O item **'{item_name}'** não existe na loja do servidor.")
 
-        # 2. Verificar estoque se for limitado
-        is_limited = matched_item.get("is_limited", False)
-        current_stock = matched_item.get("stock", 0)
-        
-        if is_limited and current_stock <= 0:
-            await self.db.servers.update_one(
-                {"server_id": ctx.guild.id},
-                {"$pull": {"store": {"id": matched_item.get("id")}}}
-            )
-            return await ctx.send("❌ Sinto muito, este item esgotou no estoque e foi removido da loja!")
-
         price = matched_item.get("price")
 
-        # 3. Buscar carteira do usuário (desconta APENAS da wallet)
+        # 2. Buscar carteira do usuário no banco 
         user_data = await self.db.users.find_one({"discord_id": ctx.author.id}) or {}
         server_profile = user_data.get("servers", {}).get(server_id_str, {})
         wallet = server_profile.get("wallet", 0)
 
+        # Checagem de saldo que vale tanto para dodo quanto para itens normais
         if wallet < price:
             return await ctx.send(
                 f"❌ Você não tem moedas suficientes na carteira!\n"
@@ -83,7 +80,54 @@ class StoreActionsCog(commands.Cog):
 
         now = datetime.now(timezone.utc)
 
-        # 4. Processar entrega de cargo (se for do tipo cargo)
+        if matched_item.get("type") == "dodo":
+            if server_profile.get("has_dodo", False):
+                return await ctx.send("❌ Você já tem um Dodô vivo! Não pode ter dois ao mesmo tempo.")
+
+            await ctx.send(f"Você está pagando `{price}` moedas por um Dodô. **Digite no chat como você quer chamar o seu Dodô** (tempo: 60s):")
+
+            def check(m):
+                return m.author == ctx.author and m.channel == ctx.channel
+
+            try:
+                msg = await self.bot.wait_for('message', check=check, timeout=60.0)
+                dodo_name = msg.content.strip()
+                
+                if len(dodo_name) > 30:
+                    dodo_name = dodo_name[:30]
+
+            except asyncio.TimeoutError:
+                return await ctx.send("⏳ Tempo esgotado! A compra do Dodô foi cancelada e seu dinheiro não foi descontado.")
+
+            # Desconta o dinheiro e salva o dodô
+            await self.db.users.update_one(
+                {"discord_id": ctx.author.id},
+                {
+                    "$inc": {f"servers.{server_id_str}.wallet": -price},
+                    "$set": {
+                        f"servers.{server_id_str}.has_dodo": True,
+                        f"servers.{server_id_str}.dodo_name": dodo_name,
+                        "updated_at": now
+                    }
+                }
+            )
+
+            # Para a execução do comando aqui, já que o dodô foi comprado com sucesso
+            return await ctx.send(f"🎉 Parabéns! Você acaba de adotar o **🦤 {dodo_name}**. Cuide bem dele e boa sorte nas rinhas!")
+        
+        
+        # Verificar estoque se for limitado
+        is_limited = matched_item.get("is_limited", False)
+        current_stock = matched_item.get("stock", 0)
+        
+        if is_limited and current_stock <= 0:
+            await self.db.servers.update_one(
+                {"server_id": ctx.guild.id},
+                {"$pull": {"store": {"id": matched_item.get("id")}}}
+            )
+            return await ctx.send("❌ Sinto muito, este item esgotou no estoque e foi removido da loja!")
+
+        # Processar entrega de cargo 
         if matched_item.get("type") == "cargo":
             role_id = matched_item.get("role_id")
             if role_id:
@@ -94,7 +138,7 @@ class StoreActionsCog(commands.Cog):
                     except discord.Forbidden:
                         return await ctx.send("❌ Erro interno: Não tenho permissão para entregar este cargo. Avise um Administrador.")
 
-        # 5. Descontar o dinheiro da carteira do usuário no Banco de Dados
+        # Descontar o dinheiro da carteira
         await self.db.users.update_one(
             {"discord_id": ctx.author.id},
             {
@@ -103,7 +147,7 @@ class StoreActionsCog(commands.Cog):
             }
         )
 
-        # 6. Atualizar estoque ou remover se for a última unidade
+        # Atualizar estoque
         if is_limited:
             if current_stock <= 1:
                 await self.db.servers.update_one(
@@ -116,7 +160,7 @@ class StoreActionsCog(commands.Cog):
                     {"$inc": {"store.$.stock": -1}}
                 )
 
-        # 7. Mensagem de Sucesso
+        # Mensagem de Sucesso
         embed = discord.Embed(
             title="🛍️ Compra Efetuada com Sucesso!",
             description=f"Você adquiriu **{matched_item.get('name')}** por **{price} moedas** tiradas da sua carteira.",
@@ -132,61 +176,6 @@ class StoreActionsCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
-    @commands.command(name="comprardodo")
-    async def comprardodo(self, ctx):
-        server_id_str = str(ctx.guild.id)
-        
-        # Checa se tem dodo na loja
-        server_data = await self.db.servers.find_one({"server_id": ctx.guild.id}) or {}
-        store_items = server_data.get("store", [])
-        dodo_info = next((item for item in store_items if item.get("type") == "dodo"), None)
-        
-        if not dodo_info:
-            return await ctx.send("❌ Não há Dodôs à venda na loja no momento!")
-
-        price = dodo_info.get("price", 0)
-
-        # Checa saldo e se o usuário JÁ TEM um Dodô
-        user_data = await self.db.users.find_one({"discord_id": ctx.author.id}) or {}
-        server_profile = user_data.get("servers", {}).get(server_id_str, {})
-        
-        if server_profile.get("has_dodo", False):
-            return await ctx.send("❌ Você já tem um Dodô vivo! Não pode ter dois ao mesmo tempo.")
-
-        user_wallet = server_profile.get("wallet", 0)
-        
-        if user_wallet < price:
-            return await ctx.send(f"❌ Você não tem dinheiro na carteira para comprar um Dodô. (Custa: `{price}` moedas).")
-
-        # Pede o nome do Dodô no chat
-        await ctx.send(f"Você está pagando `{price}` por um Dodô. Digite no chat como você quer chamar o seu Dodô (tempo: 60s):")
-
-        def check(m):
-            return m.author == ctx.author and m.channel == ctx.channel
-
-        try:
-            msg = await self.bot.wait_for('message', check=check, timeout=60.0)
-            dodo_name = msg.content.strip()
-            
-            # Limita o nome para não ficar gigante no embed da luta
-            if len(dodo_name) > 30:
-                dodo_name = dodo_name[:30]
-
-        except asyncio.TimeoutError:
-            return await ctx.send("⏳ Tempo esgotado! A compra do Dodô foi cancelada.")
-
-        await self.db.users.update_one(
-            {"discord_id": ctx.author.id},
-            {
-                "$inc": {f"servers.{server_id_str}.wallet": -price},
-                "$set": {
-                    f"servers.{server_id_str}.has_dodo": True,
-                    f"servers.{server_id_str}.dodo_name": dodo_name
-                }
-            }
-        )
-
-        await ctx.send(f"🎉 Parabéns! Você acaba de adotar o **🦤 {dodo_name}**. Cuide bem dele e boa sorte nas rinhas!")
 
 async def setup(bot):
     await bot.add_cog(StoreActionsCog(bot))
