@@ -73,6 +73,27 @@ class StoreActionsCog(commands.Cog):
         server_profile = user_data.get("servers", {}).get(server_id_str, {})
         wallet = server_profile.get("wallet", 0)
 
+        embed = discord.Embed(
+            title="💸 Saldo Insuficiente!",
+            description="Você não possui moedas o bastante na sua **carteira** para realizar esta compra.",
+            color=0xe74c3c # Vermelho suave de erro
+        )
+        
+        embed.add_field(
+            name="🏷️ Preço", 
+            value=f"<:bone:1386546091306254386> {price:,} moedas".replace(",", "."), 
+            inline=True
+        )
+        embed.add_field(
+            name="👛 Sua Carteira", 
+            value=f"<:bone:1386546091306254386> {wallet:,} moedas".replace(",", "."), 
+            inline=True
+        )
+        
+        embed.set_footer(text="💡 Dica: Use d!sacar para puxar dinheiro do banco.")
+        
+        
+        
         if wallet < price:
             return await ctx.send(
                 f"❌ Você não tem moedas suficientes na carteira!\n"
@@ -160,16 +181,32 @@ class StoreActionsCog(commands.Cog):
         price = dodo_item.get("price")
         
         # Checar a carteira e o perfil do usuário
-        user_data = await self.db.users.find_one({"discord_id": ctx.author.id}) or {}
-        server_profile = user_data.get("servers", {}).get(server_id_str, {})
-        wallet = server_profile.get("wallet", 0)
+        
         
         if wallet < price:
-            return await ctx.send(
-                f"❌ Você não tem moedas suficientes na carteira!\n"
-                f"• Preço do Dodô: **{price}** moedas\n"
-                f"• Sua carteira atual: **{wallet}** moedas"
+            user_data = await self.db.users.find_one({"discord_id": ctx.author.id}) or {}
+            server_profile = user_data.get("servers", {}).get(server_id_str, {})
+            wallet = server_profile.get("wallet", 0)
+    
+            embed = discord.Embed(
+                title="💸 Saldo Insuficiente!",
+                description="Você não possui moedas o bastante na sua **carteira** para realizar esta compra.",
+                color=0xe74c3c # Vermelho suave de erro
             )
+            
+            embed.add_field(
+                name="🏷️ Preço", 
+                value=f"<:bone:1386546091306254386> {price:,} moedas".replace(",", "."), 
+                inline=True
+            )
+            embed.add_field(
+                name="👛 Sua Carteira", 
+                value=f"<:bone:1386546091306254386> {wallet:,} moedas".replace(",", "."), 
+                inline=True
+            )
+            
+            embed.set_footer(text="💡 Dica: Use d!sacar para puxar dinheiro do banco.")
+            return await ctx.send(embed=embed)
             
         # Garantir que ele já não tenha um Dodô vivo
         if server_profile.get("has_dodo", False):
