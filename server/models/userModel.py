@@ -19,6 +19,10 @@ class ServerProfile(BaseModel):
         description="Mapeia o ID do cargo (str) para a data/hora do último recebimento"
     )
 
+    # DODO
+    has_dodo: bool = Field(default=False, description="Indica se o usuário possui um Dodô vivo")
+    dodo_name: Optional[str] = Field(None, description="O nome do Dodô do usuário")
+
     # Campos de Strike 
     has_strike: bool = Field(default=False, description="Indica se o usuário possui strike ativo")
     strike_count: int = Field(default=0, description="Quantidade total de strikes recebidos aqui")
