@@ -132,5 +132,61 @@ class StoreActionsCog(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @commands.command(name="comprardodo")
+    async def comprardodo(self, ctx):
+        server_id_str = str(ctx.guild.id)
+        
+        # Checa se tem dodo na loja
+        server_data = await self.db.servers.find_one({"server_id": ctx.guild.id}) or {}
+        store_items = server_data.get("store", [])
+        dodo_info = next((item for item in store_items if item.get("type") == "dodo"), None)
+        
+        if not dodo_info:
+            return await ctx.send("❌ Não há Dodôs à venda na loja no momento!")
+
+        price = dodo_info.get("price", 0)
+
+        # Checa saldo e se o usuário JÁ TEM um Dodô
+        user_data = await self.db.users.find_one({"discord_id": ctx.author.id}) or {}
+        server_profile = user_data.get("servers", {}).get(server_id_str, {})
+        
+        if server_profile.get("has_dodo", False):
+            return await ctx.send("❌ Você já tem um Dodô vivo! Não pode ter dois ao mesmo tempo.")
+
+        user_wallet = server_profile.get("wallet", 0)
+        
+        if user_wallet < price:
+            return await ctx.send(f"❌ Você não tem dinheiro na carteira para comprar um Dodô. (Custa: `{price}` moedas).")
+
+        # Pede o nome do Dodô no chat
+        await ctx.send(f"Você está pagando `{price}` por um Dodô. Digite no chat como você quer chamar o seu Dodô (tempo: 60s):")
+
+        def check(m):
+            return m.author == ctx.author and m.channel == ctx.channel
+
+        try:
+            msg = await self.bot.wait_for('message', check=check, timeout=60.0)
+            dodo_name = msg.content.strip()
+            
+            # Limita o nome para não ficar gigante no embed da luta
+            if len(dodo_name) > 30:
+                dodo_name = dodo_name[:30]
+
+        except asyncio.TimeoutError:
+            return await ctx.send("⏳ Tempo esgotado! A compra do Dodô foi cancelada.")
+
+        await self.db.users.update_one(
+            {"discord_id": ctx.author.id},
+            {
+                "$inc": {f"servers.{server_id_str}.wallet": -price},
+                "$set": {
+                    f"servers.{server_id_str}.has_dodo": True,
+                    f"servers.{server_id_str}.dodo_name": dodo_name
+                }
+            }
+        )
+
+        await ctx.send(f"🎉 Parabéns! Você acaba de adotar o **🦤 {dodo_name}**. Cuide bem dele e boa sorte nas rinhas!")
+
 async def setup(bot):
     await bot.add_cog(StoreActionsCog(bot))
