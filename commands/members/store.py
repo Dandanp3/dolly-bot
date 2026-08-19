@@ -73,34 +73,24 @@ class StoreActionsCog(commands.Cog):
         server_profile = user_data.get("servers", {}).get(server_id_str, {})
         wallet = server_profile.get("wallet", 0)
 
-        embed = discord.Embed(
-            title="💸 Saldo Insuficiente!",
-            description="Você não possui moedas o bastante na sua **carteira** para realizar esta compra.",
-            color=0xe74c3c # Vermelho suave de erro
-        )
-        
-        embed.add_field(
-            name="🏷️ Preço", 
-            value=f"<:bone:1386546091306254386> {price:,} moedas".replace(",", "."), 
-            inline=True
-        )
-        embed.add_field(
-            name="👛 Sua Carteira", 
-            value=f"<:bone:1386546091306254386> {wallet:,} moedas".replace(",", "."), 
-            inline=True
-        )
-        
-        embed.set_footer(text="💡 Dica: Use d!sacar para puxar dinheiro do banco.")
-        
-        
-        
         if wallet < price:
-            return await ctx.send(
-                f"❌ Você não tem moedas suficientes na carteira!\n"
-                f"• Preço do item: **{price}** moedas\n"
-                f"• Sua carteira atual: **{wallet}** moedas\n"
-                f"*(Dica: Use `d!sacar` para puxar dinheiro do banco)*"
+            embed = discord.Embed(
+                title="<:bone:1386546091306254386> Saldo Insuficiente!",
+                description="Você não possui moedas o bastante na sua **carteira** para realizar esta compra.",
+                color=0xe74c3c
             )
+            embed.add_field(
+                name="🏷️ Preço", 
+                value=f"<:bone:1386546091306254386> {price:,} moedas".replace(",", "."), 
+                inline=True
+            )
+            embed.add_field(
+                name="👛 Sua Carteira", 
+                value=f"<:bone:1386546091306254386> {wallet:,} moedas".replace(",", "."), 
+                inline=True
+            )
+            embed.set_footer(text="💡 Dica: Use d!sacar para puxar dinheiro do banco.")
+            return await ctx.send(embed=embed)
 
         now = datetime.now(timezone.utc)
 
@@ -180,20 +170,18 @@ class StoreActionsCog(commands.Cog):
             
         price = dodo_item.get("price")
         
-        # Checar a carteira e o perfil do usuário
+        # Carregar dados do usuário ANTES de validar saldo ou perfil
+        user_data = await self.db.users.find_one({"discord_id": ctx.author.id}) or {}
+        server_profile = user_data.get("servers", {}).get(server_id_str, {})
+        wallet = server_profile.get("wallet", 0)
         
-        
+        # Checar saldo na carteira
         if wallet < price:
-            user_data = await self.db.users.find_one({"discord_id": ctx.author.id}) or {}
-            server_profile = user_data.get("servers", {}).get(server_id_str, {})
-            wallet = server_profile.get("wallet", 0)
-    
             embed = discord.Embed(
                 title="💸 Saldo Insuficiente!",
                 description="Você não possui moedas o bastante na sua **carteira** para realizar esta compra.",
-                color=0xe74c3c # Vermelho suave de erro
+                color=0xe74c3c
             )
-            
             embed.add_field(
                 name="🏷️ Preço", 
                 value=f"<:bone:1386546091306254386> {price:,} moedas".replace(",", "."), 
@@ -204,7 +192,6 @@ class StoreActionsCog(commands.Cog):
                 value=f"<:bone:1386546091306254386> {wallet:,} moedas".replace(",", "."), 
                 inline=True
             )
-            
             embed.set_footer(text="💡 Dica: Use d!sacar para puxar dinheiro do banco.")
             return await ctx.send(embed=embed)
             
@@ -213,7 +200,7 @@ class StoreActionsCog(commands.Cog):
             return await ctx.send("❌ Você já tem um Dodô vivo! Não pode ter dois ao mesmo tempo nas rinhas.")
             
         # Iniciar o processo de compra e perguntar o nome
-        await ctx.send(f"💸 O Dodô custa `{price}` moedas. **Digite no chat o nome que você quer dar ao seu Dodô** (tempo: 60s):")
+        await ctx.send(f"<:bone:1386546091306254386>O Dodô custa `{price}` moedas. **Digite no chat o nome que você quer dar ao seu Dodô** (tempo: 60s):")
         
         def check(m):
             return m.author == ctx.author and m.channel == ctx.channel
